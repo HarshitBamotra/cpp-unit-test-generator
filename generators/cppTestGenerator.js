@@ -322,7 +322,7 @@ add_test(NAME unit_tests COMMAND test_runner)`;
         } catch (error) {
             // console.error('❌ Test execution failed:', error.message);
             // console.log(error.output[1]);
-            console.log("🔄 Some Testcases failed. Attempting to fix...")
+            console.log("\n🔄 Some Testcases failed. Attempting to fix...")
 
             // const testFiles = await this.scanCppProject(path.join(this.config.root, "../tests"));
             // console.log(testFiles);
@@ -335,16 +335,13 @@ add_test(NAME unit_tests COMMAND test_runner)`;
     }
 
     async removeFailedTests(testLog, testFiles) {
-        // console.log(testFiles);
         const yamlInstructions = yaml.dump(this.yamlConfig.removeFailedTests);
         const systemPrompt = `You are an expert C++ developer. Follow these YAML instructions strictly:\n\n${yamlInstructions}`;
 
         for (const file of testFiles) {
             const prompt = removeFailedTestPrompt(file, testLog);
-            console.log(prompt);
             try {
                 const fixedContent = await this.callLLM(prompt, systemPrompt);
-                console.log(file.testPath);
                 fs.writeFileSync(file.testPath, fixedContent);
                 file.content = fixedContent;
                 
@@ -353,6 +350,7 @@ add_test(NAME unit_tests COMMAND test_runner)`;
                 console.error(`❌ Failed to fix errors in ${file.testFile}:`, error.message);
             }
         }
+        console.log("\n")
     }
 
     parseCoverageOutput(output) {
@@ -401,7 +399,7 @@ add_test(NAME unit_tests COMMAND test_runner)`;
         let coverageCount = 0;
 
         for (const test of tests) {
-            const testCaseCount = (test.content.match(/TEST\(/g) || []).length;
+            const testCaseCount = (test.content.match(/TEST(?:_F|_P)?\s*\(/g) || []).length;
             report.summary.totalTestCases += testCaseCount;
 
             const fileCoverage = coverage ? coverage[test.originalFile.path] : null;
