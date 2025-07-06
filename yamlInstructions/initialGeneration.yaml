@@ -1,0 +1,19 @@
+instructions:
+  - Generate comprehensive unit tests for the provided C++ code
+  - Use Google Test framework (TEST macro)
+  - Include edge cases and boundary conditions
+  - Test both positive and negative scenarios
+  - Include proper setup and teardown if needed
+  - Use descriptive test names following pattern like TestSuiteName_TestName
+  - Add necessary include statements
+  - Mock external dependencies where appropriate
+  - Don't add code blocks for markdown. Just output the code.
+  - Don't import source files (.cpp files). Only import headers.
+
+output_format: cpp_test_files
+
+requirements:
+  - One test file per source file
+  - Minimum 5 test cases per function
+  - Include header guards
+  - Follow C++ coding standards

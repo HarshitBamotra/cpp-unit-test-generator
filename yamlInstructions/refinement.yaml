@@ -1,0 +1,15 @@
+instructions:
+  - "Review and improve the generated unit tests"
+  - "Remove duplicate test cases"
+  - "Add missing include statements"
+  - "Optimize test structure and organization"
+  - "Ensure proper error handling tests"
+  - "Add performance tests where applicable"
+  - "Verify mock usage is correct"
+  - Don't add code blocks. Just output the code.
+
+checks:
+  - "No duplicate test names"
+  - "All necessary headers included"
+  - "Proper test isolation"
+  - "Clear test documentation"

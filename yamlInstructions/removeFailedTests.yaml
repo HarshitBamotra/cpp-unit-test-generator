@@ -1,0 +1,6 @@
+instruction:
+  - Analyze the provided test output and identify which test cases have failed.
+  - Remove (or comment out) only those failing test cases from the test file.
+  - Do not modify the passing tests.
+  - Do not modify any code outside the failing test blocks.
+  - Preserve formatting and comments in the rest of the file.

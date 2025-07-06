@@ -1,0 +1,12 @@
+instructions:
+  - "Fix compilation errors in the generated tests"
+  - "Resolve linking issues"
+  - "Fix syntax errors and typos"
+  - "Ensure compatibility with target C++ standard"
+  - "Address missing dependencies"
+  - "Fix namespace issues"
+constraints:
+  - "Maintain original test logic"
+  - "Don't remove valid test cases"
+  - "Keep code style consistent"
+  - "Preserve test coverage"
