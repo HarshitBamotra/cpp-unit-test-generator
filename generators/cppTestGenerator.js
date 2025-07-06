@@ -28,8 +28,6 @@ class CppTestGenerator {
             debugging: fs.readFileSync(path.join(this.config.root, '/yamlInstructions/debugging.yaml'), 'utf8'),
             removeFailedTests: fs.readFileSync(path.join(this.config.root, "/yamlInstructions/removeFailedTests.yaml"), 'utf8'),
         };
-
-        this.finalTests = []
     }
 
     async initialize() {
@@ -84,7 +82,6 @@ class CppTestGenerator {
                     model: MODEL_NAME
                 }
             });
-
             return response.body.choices[0].message.content
 
         } catch (error) {
@@ -125,7 +122,8 @@ class CppTestGenerator {
                 console.error(`❌ Failed to generate test for ${file.name}:`, error.message);
             }
         }
-        this.finalTests = generatedTests;
+
+        console.log("\n")
         return generatedTests;
     }
 
@@ -157,7 +155,7 @@ class CppTestGenerator {
                 refinedTests.push(test);
             }
         }
-        this.finalTests = refinedTests;
+        console.log("\n")
         return refinedTests;
     }
 
@@ -171,24 +169,24 @@ class CppTestGenerator {
             const buildResult = this.buildProject();
 
             if (buildResult.success) {
-                console.log('✅ Build successful');
-                return await this.runTestsAndCalculateCoverage();
+                console.log('✅ Build successful\n');
+                return await this.runTestsAndCalculateCoverage(projectPath, tests);
             } else {
-                for (let i = 1; i <= 3; i++) {
+                for (let i = 1; i <= 5; i++) {
                     console.log(buildResult.errors);
-                    console.log('❌ Build failed, attempting to fix... Attempt ', i, " of 3");
+                    console.log('❌ Build failed, attempting to fix... Attempt ', i, " of 5");
                     
                     const res = await this.fixBuildErrors(buildResult.errors, tests);
 
                     if (res.success) {
-                        console.log('✅ Build successful');
-                        return await this.runTestsAndCalculateCoverage();
+                        console.log('✅ Build successful\n');
+                        return await this.runTestsAndCalculateCoverage(projectPath, tests);
                     }
 
                     buildResult.errors = res.errors;
                 }
                 console.log(buildResult.errors);
-                console.error('❌ Build process failed:');
+                console.error('❌ Build process failed... Terminating');
                 return;
             }
         } catch (error) {
@@ -272,19 +270,19 @@ add_test(NAME unit_tests COMMAND test_runner)`;
             }
         }
 
-        this.finalTests = tests;
+        console.log("\n");
 
         return this.buildProject();
     }
 
-    async runTestsAndCalculateCoverage() {
+    async runTestsAndCalculateCoverage(projectPath, tests) {
         console.log('🔄 Running tests and calculating coverage...');
 
         try {
             const testOutput = execSync(`cd ${this.config.buildDir} && ./test_runner`,
                 { encoding: 'utf8' });
 
-            console.log('Test Results:');
+            console.log('\n ✴️ Test Results:');
             console.log(testOutput);
             // console.log("All tests passed");
             try {
@@ -302,10 +300,10 @@ add_test(NAME unit_tests COMMAND test_runner)`;
                     });
                 }
 
-                console.log(coverageOutput);
-
                 const coverageData = this.parseCoverageOutput(coverageOutput);
+                console.log("\n ✴️ Coverage Data")
                 console.log(coverageData);
+
                 return {
                     success: true,
                     testOutput: testOutput,
@@ -322,19 +320,17 @@ add_test(NAME unit_tests COMMAND test_runner)`;
             }
 
         } catch (error) {
-            console.error('❌ Test execution failed:', error.message);
-            console.log(error.output[1]);
-
-            console.log("🔄 Fixing Errors...")
+            // console.error('❌ Test execution failed:', error.message);
+            // console.log(error.output[1]);
+            console.log("🔄 Some Testcases failed. Attempting to fix...")
 
             // const testFiles = await this.scanCppProject(path.join(this.config.root, "../tests"));
             // console.log(testFiles);
-            const ft = this.finalTests;
-            await this.removeFailedTests(error.output[1], ft);
+            await this.removeFailedTests(error.output[1], tests);
 
-            this.buildProject();
+            console.log("✅ Test Cases Fixed. Building Project Again...\n")
 
-            return await this.runTestsAndCalculateCoverage();
+            return this.buildAndDebugTests(projectPath, tests);
         }
     }
 
@@ -342,6 +338,7 @@ add_test(NAME unit_tests COMMAND test_runner)`;
         // console.log(testFiles);
         const yamlInstructions = yaml.dump(this.yamlConfig.removeFailedTests);
         const systemPrompt = `You are an expert C++ developer. Follow these YAML instructions strictly:\n\n${yamlInstructions}`;
+
         for (const file of testFiles) {
             const prompt = removeFailedTestPrompt(file, testLog);
             console.log(prompt);
@@ -356,8 +353,6 @@ add_test(NAME unit_tests COMMAND test_runner)`;
                 console.error(`❌ Failed to fix errors in ${file.testFile}:`, error.message);
             }
         }
-
-        this.finalTests = testFiles;
     }
 
     parseCoverageOutput(output) {
@@ -382,7 +377,7 @@ add_test(NAME unit_tests COMMAND test_runner)`;
                     percentage: parseFloat(coverageMatch[1]),
                     totalLines: parseInt(coverageMatch[2])
                 };
-                currentFile = null; // Reset for next file
+                currentFile = null;
             }
         }
 
@@ -390,12 +385,6 @@ add_test(NAME unit_tests COMMAND test_runner)`;
     }
 
     generateReport(tests, coverage) {
-        // console.log("==========COVERAGE==========")
-        // console.log(coverage);
-        // console.log("==========TESTS==========")
-        // console.log(tests);
-        // console.log("====================")
-
 
         const report = {
             timestamp: new Date().toISOString(),
@@ -408,7 +397,6 @@ add_test(NAME unit_tests COMMAND test_runner)`;
             details: []
         };
 
-        // Count test cases and calculate coverage
         let totalCoverage = 0;
         let coverageCount = 0;
 
@@ -434,7 +422,6 @@ add_test(NAME unit_tests COMMAND test_runner)`;
 
         report.summary.averageCoverage = coverageCount > 0 ? (totalCoverage / coverageCount).toFixed(2) : 0;
 
-        // Write report
         const reportPath = path.join(this.config.outputDir, 'test_report.json');
         fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 
@@ -446,6 +433,55 @@ add_test(NAME unit_tests COMMAND test_runner)`;
         console.log(`Report saved to: ${reportPath}`);
 
         return report;
+    }
+
+
+    async generateTestsForProject(projectPath) {
+        console.log('🚀 Starting C++ Unit Test Generation...');
+        
+        try {
+            await this.initialize();
+            
+            const cppFiles = await this.scanCppProject(projectPath);
+            
+            if (cppFiles.length === 0) {
+                throw new Error('No C++ source files found in the project');
+            }
+            
+            const initialTests = await this.generateInitialTests(cppFiles);
+            
+            const refinedTests = await this.refineTests(initialTests);
+            
+            const buildResult = await this.buildAndDebugTests(projectPath, refinedTests);
+            
+            let coverage = null;
+            
+            if (!buildResult.success) {
+                console.log('⚠️  Final build failed, but tests are generated');
+                return;
+            }
+            
+            coverage = buildResult.coverage;
+            
+            const report = this.generateReport(refinedTests, coverage);
+            
+            console.log('\n✅ C++ Unit Test Generation Complete!');
+            console.log(`📁 Tests generated in: ${this.config.outputDir}`);
+            
+            return {
+                success: true,
+                tests: refinedTests,
+                report: report,
+                coverage: coverage
+            };
+            
+        } catch (error) {
+            console.error('❌ Test generation failed:', error.message);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
 }
 
