@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npx nodemon index.js"
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
@@ -13,9 +13,7 @@
     "@azure-rest/ai-inference": "^1.0.0-beta.6",
     "@azure/core-auth": "^1.9.0",
     "dotenv": "^17.0.1",
-    "express": "^5.1.0",
     "glob": "^11.0.3",
-    "js-yaml": "^4.1.0",
-    "nodemon": "^3.1.10"
+    "js-yaml": "^4.1.0"
   }
 }
