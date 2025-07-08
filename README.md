@@ -104,3 +104,11 @@ npm start
 ### Test Report
 ![Test report](https://github.com/HarshitBamotra/cpp-unit-test-generator/blob/master/assets/test-report.png?raw=true)
 
+
+---
+
+## TODO
+
+1. Make app run for generalized cpp project path (currently only works for ../codebase)
+2. Make this into a CLI
+3. Add more language generators

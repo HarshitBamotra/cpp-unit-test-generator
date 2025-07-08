@@ -10,6 +10,7 @@ const initialGenerationPrompt = require('../prompts/initialGenerationPrompt');
 const refineTestPrompt = require('../prompts/refineTestPrompt');
 const removeFailedTestPrompt = require('../prompts/removeFailedTestPrompt');
 const debuggingPrompt = require('../prompts/debuggingPrompt');
+const cmakeFileContent = require('../config/cmake.config');
 
 class CppTestGenerator {
     constructor(config = {}) {
@@ -197,48 +198,16 @@ class CppTestGenerator {
 
     generateCMakeLists(projectPath, tests) {
         const testFiles = tests.map((t) => {
-            // console.log(t.testPath);
             return `${path.relative(this.config.buildDir, t.testPath)}`
         }).join('\n');
 
-
-
-        return `cmake_minimum_required(VERSION 3.10)
-project(CppCoverageTest)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-find_package(GTest REQUIRED)
-find_package(Threads REQUIRED)
-
-# Source and test files
-file(GLOB SRC_FILES "../codebase/*.cpp")
-file(GLOB TEST_FILES ${testFiles})
-
-add_executable(test_runner \${SRC_FILES} \${TEST_FILES})
-
-target_include_directories(test_runner PRIVATE \${PROJECT_SOURCE_DIR}/codebase)
-
-target_link_libraries(test_runner 
-    GTest::GTest 
-    GTest::Main 
-    Threads::Threads
-)
-
-# Coverage flags
-target_compile_options(test_runner PRIVATE --coverage)
-target_link_options(test_runner PRIVATE --coverage)
-
-enable_testing()
-add_test(NAME unit_tests COMMAND test_runner)`;
+        return cmakeFileContent(testFiles); 
     }
 
 
     buildProject() {
         try {
             const buildOutput = execSync(`cd ${this.config.buildDir} && cmake . && make`, { encoding: 'utf8', stdio: 'pipe' });
-            // console.log(buildOutput);
             return { success: true, output: buildOutput };
         } catch (error) {
             return {
@@ -250,7 +219,6 @@ add_test(NAME unit_tests COMMAND test_runner)`;
     }
 
     async fixBuildErrors(errors, tests) {
-        // console.log('🔄 Attempting to fix build errors...');
 
         const yamlInstructions = yaml.dump(this.yamlConfig.debugging);
 
@@ -284,7 +252,6 @@ add_test(NAME unit_tests COMMAND test_runner)`;
 
             console.log('\n ✴️ Test Results:');
             console.log(testOutput);
-            // console.log("All tests passed");
             try {
                 const gcovDir = path.join(this.config.root, "../codebase");
 
@@ -320,12 +287,8 @@ add_test(NAME unit_tests COMMAND test_runner)`;
             }
 
         } catch (error) {
-            // console.error('❌ Test execution failed:', error.message);
-            // console.log(error.output[1]);
             console.log("\n🔄 Some Testcases failed. Attempting to fix...")
 
-            // const testFiles = await this.scanCppProject(path.join(this.config.root, "../tests"));
-            // console.log(testFiles);
             await this.removeFailedTests(error.output[1], tests);
 
             console.log("✅ Test Cases Fixed. Building Project Again...\n")

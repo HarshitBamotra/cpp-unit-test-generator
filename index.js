@@ -16,7 +16,6 @@ async function main(){
     } else {
         console.error('❌ Test generation failed:', result.error);
     }
-
 }
 
 if (require.main === module) {
